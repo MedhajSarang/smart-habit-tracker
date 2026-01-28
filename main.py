@@ -21,3 +21,11 @@ elif page == "Dashboard":
 elif page == "Add Habit":
     st.title("➕ Track a New Habit")
     st.write("Form to add habits will appear here.")
+
+# --- TEMP: DATABASE CHECK ---
+from database.db_connection import get_db_connection
+
+if st.sidebar.button("Test DB Connection"):
+    db = get_db_connection()
+    if db:
+        st.sidebar.success("✅ Connected to Database!")
