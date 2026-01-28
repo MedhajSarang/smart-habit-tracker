@@ -3,9 +3,26 @@ import streamlit as st
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Smart Habit Tracker", page_icon="📊", layout="centered")
 
+# --- SESSION STATE INITIALIZATION ---
+if "user_id" not in st.session_state:
+    st.session_state.user_id = None
+if "username" not in st.session_state:
+    st.session_state.username = None
+
 # --- SIDEBAR NAVIGATION ---
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to:", ["Login", "Dashboard", "Add Habit"])
+
+# Dynamic Menu: Show different options if logged in
+if st.session_state.user_id:
+    st.sidebar.write(f"👤 **{st.session_state.username}**")
+    page = st.sidebar.radio("Go to:", ["Dashboard", "Add Habit"])
+    
+    if st.sidebar.button("Logout"):
+        st.session_state.user_id = None
+        st.session_state.username = None
+        st.rerun()
+else:
+    page = "Login" # Force them to stay on Login page
 
 # --- PAGE ROUTING ---
 if page == "Login":
@@ -36,10 +53,21 @@ if page == "Login":
     # --- LOGIN TAB ---
     with tab1:
         st.header("Welcome Back")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+        username_in = st.text_input("Username", key="login_user")
+        password_in = st.text_input("Password", type="password", key="login_pass")
+        
         if st.button("Login"):
-            st.info("Login logic coming next...")
+            from database.queries import verify_login
+            user_id = verify_login(username_in, password_in)
+            
+            if user_id:
+                # SAVE TO SESSION STATE (The Backpack)
+                st.session_state.user_id = user_id
+                st.session_state.username = username_in
+                st.success(f"Welcome back, {username_in}!")
+                st.rerun() # Refresh the app to update the state
+            else:
+                st.error("Incorrect username or password.")
 
 elif page == "Dashboard":
     st.title("📊 Your Progress")
