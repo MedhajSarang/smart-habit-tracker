@@ -9,9 +9,37 @@ page = st.sidebar.radio("Go to:", ["Login", "Dashboard", "Add Habit"])
 
 # --- PAGE ROUTING ---
 if page == "Login":
-    st.title("🔐 Login")
-    st.write("Login functionality coming soon...")
-    # We will eventually import a login function here
+    st.title("🔐 Login / Sign Up")
+    
+    # Create tabs to switch between Login and Register
+    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    
+    # --- SIGN UP TAB ---
+    with tab2:
+        st.header("Create an Account")
+        new_user = st.text_input("New Username")
+        new_pass = st.text_input("New Password", type="password")
+        
+        if st.button("Sign Up"):
+            if new_user and new_pass:
+                # Call our new function
+                from database.queries import create_user
+                result = create_user(new_user, new_pass)
+                
+                if result == "Success":
+                    st.success("Account created! You can now login.")
+                else:
+                    st.error(f"Could not create account: {result}")
+            else:
+                st.warning("Please fill in both fields.")
+
+    # --- LOGIN TAB ---
+    with tab1:
+        st.header("Welcome Back")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            st.info("Login logic coming next...")
 
 elif page == "Dashboard":
     st.title("📊 Your Progress")
