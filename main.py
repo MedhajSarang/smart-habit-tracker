@@ -75,8 +75,33 @@ elif page == "Dashboard":
     # We will eventually put our Plotly graphs here
 
 elif page == "Add Habit":
-    st.title("➕ Track a New Habit")
-    st.write("Form to add habits will appear here.")
+    st.title("➕ Add a New Habit")
+    st.write("What do you want to track?")
+    
+    with st.form("add_habit_form"):
+        habit_name = st.text_input("Habit Name (e.g., Drink 2L Water)")
+        
+        # Two columns for better layout
+        col1, col2 = st.columns(2)
+        with col1:
+            category = st.selectbox("Category", ["Health", "Career", "Learning", "Mindfulness", "Other"])
+        with col2:
+            frequency = st.selectbox("Frequency", ["Daily", "Weekly", "Weekdays"])
+            
+        submit = st.form_submit_button("Create Habit")
+        
+        if submit:
+            if habit_name:
+                from database.queries import add_habit
+                # usage of session_state.user_id ensures we link it to the logged-in person
+                result = add_habit(st.session_state.user_id, habit_name, category, frequency)
+                
+                if result == "Success":
+                    st.success(f"✅ Habit '{habit_name}' added successfully!")
+                else:
+                    st.error(f"❌ Error: {result}")
+            else:
+                st.warning("⚠️ Please enter a habit name.")
 
 # --- TEMP: DATABASE CHECK ---
 from database.db_connection import get_db_connection

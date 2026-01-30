@@ -53,3 +53,22 @@ def verify_login(username, password):
     except Exception as e:
         print(f"Login Error: {e}")
         return None
+
+def add_habit(user_id, name, category, frequency):
+    """
+    Adds a new habit to the database for a specific user.
+    """
+    supabase = get_db_connection()
+    
+    habit_data = {
+        "user_id": user_id,
+        "name": name,
+        "category": category,
+        "frequency": frequency
+    }
+    
+    try:
+        response = supabase.table("habits").insert(habit_data).execute()
+        return "Success"
+    except Exception as e:
+        return f"Error: {e}"
