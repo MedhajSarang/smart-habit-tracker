@@ -15,7 +15,7 @@ st.sidebar.title("Navigation")
 # Dynamic Menu: Show different options if logged in
 if st.session_state.user_id:
     st.sidebar.write(f"👤 **{st.session_state.username}**")
-    page = st.sidebar.radio("Go to:", ["Dashboard", "Add Habit"])
+    page = st.sidebar.radio("Go to:", ["Dashboard", "Analytics", "Add Habit"])
     
     if st.sidebar.button("Logout"):
         st.session_state.user_id = None
@@ -103,6 +103,55 @@ elif page == "Dashboard":
             if checked != is_done:
                 toggle_habit(habit_id, today, checked)
                 st.rerun() # Refresh to confirm the save
+
+elif page == "Analytics":
+    st.title("📈 Analytics Dashboard")
+    
+    from utils.analytics import get_habit_stats
+    import plotly.express as px
+    
+    # 1. Get the Data
+    df = get_habit_stats(st.session_state.user_id)
+    
+    if df.empty:
+        st.info("No data available yet. Complete some habits!")
+    else:
+        # 2. Plotly Bar Chart
+        st.subheader("🏆 Consistency Score")
+        
+        # This creates a beautiful interactive bar chart
+        fig = px.bar(
+            df, 
+            x="name", 
+            y="count", 
+            color="category",
+            text="count",
+            template="plotly_dark", # Dark mode style
+            labels={"count": "Days Completed", "name": "Habit"}
+        )
+        # Display it
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.divider()
+        
+        # 3. Heatmap (Day vs Habit)
+        st.subheader("🔥 Consistency Heatmap")
+        st.write("When are you most active?")
+        
+        from utils.analytics import get_day_of_week_stats
+        df_heatmap = get_day_of_week_stats(st.session_state.user_id)
+        
+        if not df_heatmap.empty:
+            fig2 = px.density_heatmap(
+                df_heatmap,
+                x="day_name",
+                y="name",
+                z="count",
+                text_auto=True, # Shows the numbers in the boxes
+                color_continuous_scale="Greens", # GitHub style colors
+                labels={"day_name": "Day", "name": "Habit", "count": "Completions"}
+            )
+            st.plotly_chart(fig2, use_container_width=True)
 
 elif page == "Add Habit":
     st.title("➕ Add a New Habit")
