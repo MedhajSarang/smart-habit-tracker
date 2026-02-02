@@ -70,9 +70,39 @@ if page == "Login":
                 st.error("Incorrect username or password.")
 
 elif page == "Dashboard":
-    st.title("📊 Your Progress")
-    st.write("Visualizations will appear here.")
-    # We will eventually put our Plotly graphs here
+    st.title("📊 Your Daily Dashboard")
+    
+    # 1. Get the Current Date
+    from datetime import date
+    today = date.today()
+    st.write(f"**Date:** {today.strftime('%B %d, %Y')}")
+    st.divider()
+    
+    # 2. Fetch User's Habits
+    from database.queries import get_user_habits, is_habit_done_today, toggle_habit
+    habits = get_user_habits(st.session_state.user_id)
+    
+    if not habits:
+        st.info("You haven't added any habits yet. Go to 'Add Habit' to start!")
+    else:
+        # 3. Display Habits as Checkboxes
+        st.subheader("Today's Tasks")
+        
+        for habit in habits:
+            habit_id = habit['habit_id']
+            habit_name = habit['name']
+            
+            # Check DB to see if it was already done today
+            is_done = is_habit_done_today(habit_id, today)
+            
+            # Create a checkbox
+            # value=is_done sets the initial state (checked/unchecked)
+            checked = st.checkbox(f"**{habit_name}** ({habit['category']})", value=is_done, key=habit_id)
+            
+            # 4. Handle Logic (Only if state changed)
+            if checked != is_done:
+                toggle_habit(habit_id, today, checked)
+                st.rerun() # Refresh to confirm the save
 
 elif page == "Add Habit":
     st.title("➕ Add a New Habit")

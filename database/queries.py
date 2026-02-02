@@ -72,3 +72,35 @@ def add_habit(user_id, name, category, frequency):
         return "Success"
     except Exception as e:
         return f"Error: {e}"
+
+# 1. Fetch all habits for the user
+def get_user_habits(user_id):
+    supabase = get_db_connection()
+    try:
+        response = supabase.table("habits").select("*").eq("user_id", user_id).execute()
+        return response.data
+    except Exception as e:
+        return []
+
+# 2. Check if a specific habit is done today (to keep the box checked)
+def is_habit_done_today(habit_id, date):
+    supabase = get_db_connection()
+    try:
+        # Check for a log entry for this habit on this date
+        response = supabase.table("tracker_logs").select("*").eq("habit_id", habit_id).eq("date", date).execute()
+        return len(response.data) > 0 # Returns True if data exists
+    except Exception as e:
+        return False
+
+# 3. Toggle the habit (Check/Uncheck)
+def toggle_habit(habit_id, date, done):
+    supabase = get_db_connection()
+    try:
+        if done:
+            # Insert a log
+            supabase.table("tracker_logs").insert({"habit_id": habit_id, "date": str(date)}).execute()
+        else:
+            # Delete the log (Uncheck)
+            supabase.table("tracker_logs").delete().eq("habit_id", habit_id).eq("date", str(date)).execute()
+    except Exception as e:
+        print(f"Error toggling habit: {e}")
