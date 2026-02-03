@@ -80,7 +80,7 @@ elif page == "Dashboard":
     
     # 2. Fetch User's Habits
     from database.queries import get_user_habits, is_habit_done_today, toggle_habit
-    habits = get_user_habits(st.session_state.user_id)
+    habits = get_user_habits(st.session_state.user_id, active_only=True)
     
     if not habits:
         st.info("You haven't added any habits yet. Go to 'Add Habit' to start!")
@@ -185,46 +185,53 @@ elif page == "Add Habit":
 elif page == "Manage Habits":
     st.title("⚙️ Manage Your Habits")
     
-    from database.queries import get_user_habits, delete_habit, update_habit
+    from database.queries import get_user_habits, delete_habit, update_habit, toggle_habit_status
     
     # 1. Fetch current habits
-    habits = get_user_habits(st.session_state.user_id)
+    habits = get_user_habits(st.session_state.user_id, active_only=False)
     
     if not habits:
         st.info("You have no habits to manage.")
     else:
         for habit in habits:
-            # We use an 'expander' so the page isn't cluttered
-            with st.expander(f"📍 {habit['name']}"):
+            # Visual Cue: Add (Archived) to the name if it's inactive
+            status_icon = "🟢" if habit['is_active'] else "zzz"
+            expander_title = f"{status_icon} {habit['name']}"
+            
+            with st.expander(expander_title):
+                st.write(f"**Current Status:** {'Active' if habit['is_active'] else 'Archived'}")
                 
-                # --- EDIT SECTION ---
+                # --- EDIT SECTION (Same as before) ---
                 st.subheader("Edit Details")
                 with st.form(key=f"edit_{habit['habit_id']}"):
                     new_name = st.text_input("Name", value=habit['name'])
+                    # ... (Keep your existing selectboxes for Category/Frequency here) ...
+                    # To save time, just copy the col1/col2 logic from your previous code
                     col1, col2 = st.columns(2)
                     new_cat = col1.selectbox("Category", ["Health", "Career", "Learning", "Mindfulness", "Other"], index=["Health", "Career", "Learning", "Mindfulness", "Other"].index(habit['category']))
                     new_freq = col2.selectbox("Frequency", ["Daily", "Weekly", "Weekdays"], index=["Daily", "Weekly", "Weekdays"].index(habit['frequency']))
                     
-                    update_btn = st.form_submit_button("Save Changes")
-                    
-                    if update_btn:
-                        res = update_habit(habit['habit_id'], new_name, new_cat, new_freq)
-                        if res == "Success":
-                            st.success("Updated!")
-                            st.rerun()
-                        else:
-                            st.error(res)
-
-                # --- DELETE SECTION ---
-                st.subheader("Danger Zone")
-                # We use a unique key for every button so Streamlit doesn't get confused
-                if st.button("🗑️ Delete Habit", key=f"del_{habit['habit_id']}"):
-                    res = delete_habit(habit['habit_id'])
-                    if res == "Success":
-                        st.warning(f"Deleted '{habit['name']}'")
+                    if st.form_submit_button("Save Changes"):
+                        update_habit(habit['habit_id'], new_name, new_cat, new_freq)
                         st.rerun()
-                    else:
-                        st.error(res)
+
+                st.divider()
+
+                # --- ACTIONS SECTION ---
+                col_a, col_b = st.columns(2)
+                
+                # 1. ARCHIVE / ACTIVATE BUTTON
+                with col_a:
+                    btn_label = "Deactivate (Archive)" if habit['is_active'] else "Reactivate"
+                    if st.button(btn_label, key=f"arch_{habit['habit_id']}"):
+                        toggle_habit_status(habit['habit_id'], habit['is_active'])
+                        st.rerun()
+                
+                # 2. HARD DELETE BUTTON (Still good to keep for mistakes)
+                with col_b:
+                    if st.button("🗑️ Delete Permanently", key=f"del_{habit['habit_id']}"):
+                        delete_habit(habit['habit_id'])
+                        st.rerun()
 
 # --- TEMP: DATABASE CHECK ---
 from database.db_connection import get_db_connection

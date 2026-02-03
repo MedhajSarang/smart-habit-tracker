@@ -74,10 +74,20 @@ def add_habit(user_id, name, category, frequency):
         return f"Error: {e}"
 
 # 1. Fetch all habits for the user
-def get_user_habits(user_id):
+def get_user_habits(user_id, active_only=True):
+    """
+    Fetch habits. 
+    If active_only=True, returns only currently active habits.
+    If active_only=False, returns EVERYTHING (for history/management).
+    """
     supabase = get_db_connection()
     try:
-        response = supabase.table("habits").select("*").eq("user_id", user_id).execute()
+        query = supabase.table("habits").select("*").eq("user_id", user_id)
+        
+        if active_only:
+            query = query.eq("is_active", True)
+            
+        response = query.execute()
         return response.data
     except Exception as e:
         return []
@@ -129,6 +139,19 @@ def update_habit(habit_id, name, category, frequency):
             "category": category,
             "frequency": frequency
         }).eq("habit_id", habit_id).execute()
+        return "Success"
+    except Exception as e:
+        return f"Error: {e}"
+
+def toggle_habit_status(habit_id, current_status):
+    """
+    Flips the habit from Active -> Inactive OR Inactive -> Active.
+    """
+    supabase = get_db_connection()
+    new_status = not current_status # Flip the boolean
+    
+    try:
+        supabase.table("habits").update({"is_active": new_status}).eq("habit_id", habit_id).execute()
         return "Success"
     except Exception as e:
         return f"Error: {e}"
