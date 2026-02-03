@@ -15,7 +15,7 @@ st.sidebar.title("Navigation")
 # Dynamic Menu: Show different options if logged in
 if st.session_state.user_id:
     st.sidebar.write(f"👤 **{st.session_state.username}**")
-    page = st.sidebar.radio("Go to:", ["Dashboard", "Analytics", "Add Habit"])
+    page = st.sidebar.radio("Go to:", ["Dashboard", "Analytics", "Add Habit", "Manage Habits"])
     
     if st.sidebar.button("Logout"):
         st.session_state.user_id = None
@@ -181,6 +181,50 @@ elif page == "Add Habit":
                     st.error(f"❌ Error: {result}")
             else:
                 st.warning("⚠️ Please enter a habit name.")
+
+elif page == "Manage Habits":
+    st.title("⚙️ Manage Your Habits")
+    
+    from database.queries import get_user_habits, delete_habit, update_habit
+    
+    # 1. Fetch current habits
+    habits = get_user_habits(st.session_state.user_id)
+    
+    if not habits:
+        st.info("You have no habits to manage.")
+    else:
+        for habit in habits:
+            # We use an 'expander' so the page isn't cluttered
+            with st.expander(f"📍 {habit['name']}"):
+                
+                # --- EDIT SECTION ---
+                st.subheader("Edit Details")
+                with st.form(key=f"edit_{habit['habit_id']}"):
+                    new_name = st.text_input("Name", value=habit['name'])
+                    col1, col2 = st.columns(2)
+                    new_cat = col1.selectbox("Category", ["Health", "Career", "Learning", "Mindfulness", "Other"], index=["Health", "Career", "Learning", "Mindfulness", "Other"].index(habit['category']))
+                    new_freq = col2.selectbox("Frequency", ["Daily", "Weekly", "Weekdays"], index=["Daily", "Weekly", "Weekdays"].index(habit['frequency']))
+                    
+                    update_btn = st.form_submit_button("Save Changes")
+                    
+                    if update_btn:
+                        res = update_habit(habit['habit_id'], new_name, new_cat, new_freq)
+                        if res == "Success":
+                            st.success("Updated!")
+                            st.rerun()
+                        else:
+                            st.error(res)
+
+                # --- DELETE SECTION ---
+                st.subheader("Danger Zone")
+                # We use a unique key for every button so Streamlit doesn't get confused
+                if st.button("🗑️ Delete Habit", key=f"del_{habit['habit_id']}"):
+                    res = delete_habit(habit['habit_id'])
+                    if res == "Success":
+                        st.warning(f"Deleted '{habit['name']}'")
+                        st.rerun()
+                    else:
+                        st.error(res)
 
 # --- TEMP: DATABASE CHECK ---
 from database.db_connection import get_db_connection

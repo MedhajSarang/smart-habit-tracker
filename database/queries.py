@@ -104,3 +104,31 @@ def toggle_habit(habit_id, date, done):
             supabase.table("tracker_logs").delete().eq("habit_id", habit_id).eq("date", str(date)).execute()
     except Exception as e:
         print(f"Error toggling habit: {e}")
+
+def delete_habit(habit_id):
+    """
+    Deletes a habit and all associated logs (Cascading delete).
+    """
+    supabase = get_db_connection()
+    try:
+        # We only need to delete from 'habits'. 
+        # Because we used 'ON DELETE CASCADE' in SQL, the logs will auto-delete.
+        supabase.table("habits").delete().eq("habit_id", habit_id).execute()
+        return "Success"
+    except Exception as e:
+        return f"Error: {e}"
+
+def update_habit(habit_id, name, category, frequency):
+    """
+    Updates the details of an existing habit.
+    """
+    supabase = get_db_connection()
+    try:
+        supabase.table("habits").update({
+            "name": name,
+            "category": category,
+            "frequency": frequency
+        }).eq("habit_id", habit_id).execute()
+        return "Success"
+    except Exception as e:
+        return f"Error: {e}"
